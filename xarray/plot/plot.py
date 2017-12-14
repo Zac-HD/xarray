@@ -445,6 +445,10 @@ def _plot2d(plotfunc):
         # Decide on a default for the colorbar before facetgrids
         if add_colorbar is None:
             add_colorbar = plotfunc.__name__ != 'contour'
+        if (plotfunc.__name__ == 'imshow' and
+            darray.ndim == (3 + (row is not None) + (col is not None))):
+            # Don't add a colorbar when showing an image with explicit colors
+            add_colorbar = False
 
         # Handle facetgrids first
         if row or col:
@@ -472,7 +476,8 @@ def _plot2d(plotfunc):
                           "Use colors keyword instead.",
                           DeprecationWarning, stacklevel=3)
 
-        xlab, ylab = _infer_xy_labels(darray=darray, x=x, y=y)
+        xlab, ylab = _infer_xy_labels(darray=darray, x=x, y=y,
+                                      imshow=plotfunc.__name__ == 'imshow')
 
         # better to pass the ndarrays directly to plotting functions
         xval = darray[xlab].values
@@ -596,6 +601,10 @@ def imshow(x, y, z, ax, **kwargs):
     Image plot of 2d DataArray using matplotlib.pyplot
 
     Wraps :func:`matplotlib:matplotlib.pyplot.imshow`
+
+    While other plot methods require the DataArray to be strictly
+    two-dimensional, ``imshow`` also accepts a 3D array where the third
+    dimension can be interpreted as RGB or RGBA color channels.
 
     .. note::
         This function needs uniformly spaced coordinates to
