@@ -643,6 +643,15 @@ def imshow(x, y, z, ax, **kwargs):
     # Allow user to override these defaults
     defaults.update(kwargs)
 
+    if z.ndim == 3:
+        # matplotlib imshow uses black for missing data, but Xarray makes
+        # missing data transparent.  We therefore add an alpha channel if
+        # there isn't one, and set it to transparent where data is masked.
+        if z.shape[-1] == 3:
+            z = np.ma.concatenate((z, np.ma.ones(z.shape[:2] + (1,))), 2)
+        z = z.copy()
+        z[np.any(z.mask, axis=-1), -1] = 0
+
     primitive = ax.imshow(z, **defaults)
 
     return primitive
