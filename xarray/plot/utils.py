@@ -10,6 +10,8 @@ import pandas as pd
 from ..core.pycompat import basestring
 from ..core.utils import is_scalar
 
+ROBUST_PERCENTILE = 2.0
+
 
 def _load_default_cmap(fname='default_colormap.csv'):
     """
@@ -160,7 +162,6 @@ def _determine_cmap_params(plot_data, vmin=None, vmax=None, cmap=None,
     cmap_params : dict
         Use depends on the type of the plotting function
     """
-    ROBUST_PERCENTILE = 2.0
     import matplotlib as mpl
 
     calc_data = np.ravel(plot_data[~pd.isnull(plot_data)])

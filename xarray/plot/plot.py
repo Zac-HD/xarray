@@ -16,7 +16,7 @@ import pandas as pd
 from datetime import datetime
 
 from .utils import (_determine_cmap_params, _infer_xy_labels, get_axis,
-                    import_matplotlib_pyplot)
+                    import_matplotlib_pyplot, ROBUST_PERCENTILE)
 from .facetgrid import FacetGrid
 from xarray.core.pycompat import basestring
 
@@ -445,14 +445,32 @@ def _plot2d(plotfunc):
         # Decide on a default for the colorbar before facetgrids
         if add_colorbar is None:
             add_colorbar = plotfunc.__name__ != 'contour'
-        if (plotfunc.__name__ == 'imshow' and
-            darray.ndim == (3 + (row is not None) + (col is not None))):
+        imshow_rgb = plotfunc.__name__ == 'imshow' and \
+            darray.ndim == (3 + (row is not None) + (col is not None))
+        if imshow_rgb:
             # Don't add a colorbar when showing an image with explicit colors
             add_colorbar = False
+            # Manually stretch colors for robust cmap
+            if robust:
+                flat = darray.values.ravel(order='K')
+                flat = flat[~np.isnan(flat)]
+                if flat.size == 0:
+                    # All data will be masked, so skip percentile calculation
+                    vmin, vmax = 0, 1
+                if vmin is None:
+                    vmin = np.percentile(flat, ROBUST_PERCENTILE)
+                if vmax is None:
+                    vmax = np.percentile(flat, 100 - ROBUST_PERCENTILE)
+                darray = (darray - vmin) / (vmax - vmin)
+                robust = False
+                del flat
+            # Clip range to [0, 1] to avoid visual artefacts
+            darray.values[:] = np.clip(darray.values, 0, 1)
 
         # Handle facetgrids first
         if row or col:
             allargs = locals().copy()
+            allargs.pop('imshow_rgb')
             allargs.update(allargs.pop('kwargs'))
 
             # Need the decorated plotting function
@@ -605,6 +623,11 @@ def imshow(x, y, z, ax, **kwargs):
     While other plot methods require the DataArray to be strictly
     two-dimensional, ``imshow`` also accepts a 3D array where the third
     dimension can be interpreted as RGB or RGBA color channels.
+    In this case, ``robust=True`` will saturate the image in the
+    usual way, consistenly between all bands and facets.
+
+    This method will clip oversaturated pixels to the valid range,
+    instead of wrapping around to new colors like matplotlib.
 
     .. note::
         This function needs uniformly spaced coordinates to
