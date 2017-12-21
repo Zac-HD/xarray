@@ -1078,6 +1078,21 @@ class TestImshow(Common2dMixin, PlotTestCase):
         ).plot.imshow(row='a', col='b')
         self.assertEqual(0, len(find_possible_colorbars()))
 
+    def test_plot_rgba_image_transposed(self):
+        # We can handle the color axis being in any position
+        DataArray(
+            easy_array((4, 10, 15), start=0),
+            dims=['band', 'y', 'x'],
+        ).plot.imshow()
+
+    def test_warns_ambigious_dim(self):
+        arr = DataArray(easy_array((3, 3, 3)), dims=['y', 'x', 'band'])
+        with pytest.warns(UserWarning):
+            arr.plot.imshow()
+        # but doesn't warn if dimensions specified
+        arr.plot.imshow(rgb='band')
+        arr.plot.imshow(x='x', y='y')
+
 
 class TestFacetGrid(PlotTestCase):
 

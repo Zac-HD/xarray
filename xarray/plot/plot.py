@@ -494,13 +494,13 @@ def _plot2d(plotfunc):
                           "Use colors keyword instead.",
                           DeprecationWarning, stacklevel=3)
 
-        xlab, ylab = _infer_xy_labels(darray=darray, x=x, y=y,
-                                      imshow=plotfunc.__name__ == 'imshow')
+        rgb = kwargs.pop('rgb', None)
+        xlab, ylab = _infer_xy_labels(
+            darray=darray, x=x, y=y, imshow=imshow_rgb, rgb=rgb)
 
         # better to pass the ndarrays directly to plotting functions
         xval = darray[xlab].values
         yval = darray[ylab].values
-        zval = darray.to_masked_array(copy=False)
 
         # check if we need to broadcast one dimension
         if xval.ndim < yval.ndim:
@@ -511,8 +511,19 @@ def _plot2d(plotfunc):
 
         # May need to transpose for correct x, y labels
         # xlab may be the name of a coord, we have to check for dim names
-        if darray[xlab].dims[-1] == darray.dims[0]:
-            zval = zval.T
+        if imshow_rgb:
+            # For RGB[A] images, matplotlib requires the color dimension
+            # to be last.  In Xarray the order should be unimportant, so
+            # we transpose to (y, x, color) to make this work.
+            yx_dims = (ylab, xlab)
+            dims = yx_dims + tuple(d for d in darray.dims if d not in yx_dims)
+            if dims != darray.dims:
+                darray = darray.transpose(*dims)
+        elif darray[xlab].dims[-1] == darray.dims[0]:
+            darray = darray.transpose()
+
+        # Pass the data as a masked ndarray too
+        zval = darray.to_masked_array(copy=False)
 
         _ensure_plottable(xval, yval)
 
@@ -621,8 +632,9 @@ def imshow(x, y, z, ax, **kwargs):
     Wraps :func:`matplotlib:matplotlib.pyplot.imshow`
 
     While other plot methods require the DataArray to be strictly
-    two-dimensional, ``imshow`` also accepts a 3D array where the third
-    dimension can be interpreted as RGB or RGBA color channels.
+    two-dimensional, ``imshow`` also accepts a 3D array where some
+    dimension can be interpreted as RGB or RGBA color channels and
+    allows this dimension to be specified via the kwarg ``rgb=``.
     In this case, ``robust=True`` will saturate the image in the
     usual way, consistenly between all bands and facets.
 
