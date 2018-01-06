@@ -450,6 +450,9 @@ def _plot2d(plotfunc):
         if imshow_rgb:
             # Don't add a colorbar when showing an image with explicit colors
             add_colorbar = False
+            # Convert byte-arrays to float for correct display in matplotlib
+            if darray.dtype == np.dtype('uint8'):
+                darray = darray / 256.0
             # Manually stretch colors for robust cmap
             if robust:
                 flat = darray.values.ravel(order='K')
@@ -464,8 +467,10 @@ def _plot2d(plotfunc):
                 darray = (darray - vmin) / (vmax - vmin)
                 robust = False
                 del flat
-            # Clip range to [0, 1] to avoid visual artefacts
-            darray.values[:] = np.clip(darray.values, 0, 1)
+            # Clip range of floats to [0, 1] to avoid visual artefacts
+            else:
+                darray = darray.copy(deep=True)
+                darray.values[:] = np.clip(darray.values, 0, 1)
 
         # Handle facetgrids first
         if row or col:
