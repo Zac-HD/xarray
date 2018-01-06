@@ -453,7 +453,8 @@ def _plot2d(plotfunc):
             # Convert byte-arrays to float for correct display in matplotlib
             if darray.dtype == np.dtype('uint8'):
                 darray = darray / 256.0
-            # Manually stretch colors for robust cmap
+            # Manually stretch colors for robust cmap.  We have to do this
+            # first so faceted plots are comparable between facets.
             if robust:
                 flat = darray.values.ravel(order='K')
                 flat = flat[~np.isnan(flat)]
@@ -502,6 +503,12 @@ def _plot2d(plotfunc):
         rgb = kwargs.pop('rgb', None)
         xlab, ylab = _infer_xy_labels(
             darray=darray, x=x, y=y, imshow=imshow_rgb, rgb=rgb)
+
+        if rgb is not None and plotfunc.__name__ != 'imshow':
+            raise ValueError('The "rgb" keyword is only valid for imshow()')
+        elif rgb is not None and not imshow_rgb:
+            raise ValueError('The "rgb" keyword is only valid for imshow()'
+                             'with a three-dimensional array (per facet)')
 
         # better to pass the ndarrays directly to plotting functions
         xval = darray[xlab].values
