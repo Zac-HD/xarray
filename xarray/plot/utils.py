@@ -261,6 +261,8 @@ def _infer_xy_labels_3d(darray, x, y, rgb):
     Attempts to infer which dimension is RGB/RGBA by size and order of dims.
 
     """
+    assert rgb is None or rgb != x
+    assert rgb is None or rgb != y
     # Start by detecting and reporting invalid combinations of arguments
     assert darray.ndim == 3
     not_none = [a for a in (x, y, rgb) if a is not None]
@@ -308,6 +310,7 @@ def _infer_xy_labels(darray, x, y, imshow=False, rgb=None):
 
     darray must be a 2 dimensional data array, or 3d for imshow only.
     """
+    assert x is None or x != y
     if imshow and darray.ndim == 3:
         return _infer_xy_labels_3d(darray, x, y, rgb)
 
