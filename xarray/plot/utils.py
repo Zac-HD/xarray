@@ -290,19 +290,12 @@ def _infer_xy_labels_3d(darray, x, y, rgb):
     # in could_be_color.  We therefore warn, and use a heuristic to break ties.
     if rgb is None:
         assert len(could_be_color) in (2, 3)
-        if darray.dims[-1] in could_be_color:
-            rgb = darray.dims[-1]
-            warnings.warn(
-                'Several dimensions of this array could be colors.  Xarray '
-                'will use the last dimension (%r) to match '
-                'matplotlib.pyplot.imshow.  You can pass names of x, y, '
-                'and/or rgb dimensions to override this guess.' % rgb)
-        else:
-            rgb = darray.dims[0]
-            warnings.warn(
-                '%r has been selected as the color dimension, but %r would '
-                'also be valid.  Pass names of x, y, and/or rgb dimensions to '
-                'override this guess.' % darray.dims[:2])
+        rgb = could_be_color[-1]
+        warnings.warn(
+            'Several dimensions of this array could be colors.  Xarray '
+            'will use the last possible dimension (%r) to match '
+            'matplotlib.pyplot.imshow.  You can pass names of x, y, '
+            'and/or rgb dimensions to override this guess.' % rgb)
     assert rgb is not None
 
     # Finally, we pick out the red slice and delegate to the 2D version:
